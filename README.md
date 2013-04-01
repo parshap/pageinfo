@@ -7,12 +7,12 @@ given URI. Currently the following information is available:
 # Usage
 
 ```js
-	var pageinfo = require("pageinfo"),
+	var pageinfo = require("pageinfo");
 
 	pageinfo("http://en.wikipedia.org/wiki/Fish", function(err, info) {
 		if (err) throw err;
-		console.log(title)
-		console.log(images.length, "images found");
+		console.log(info.title);
+		console.log(info.images.length, "images found");
 	});
 ```
 
