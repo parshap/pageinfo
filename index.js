@@ -1,52 +1,100 @@
 "use strict";
 
-var URL = "http://en.wikipedia.org/wiki/Fish";
-
-var url = require("url"),
-	request = require("request"),
+var request = require("request"),
 	jsdom = require("jsdom"),
 	gm = require("gm"),
 	async = require("async");
 
-function getImgSrc(imageNode) {
-	return imageNode.attributes.src.value;
-}
+// Return images
+module.exports = function(docURL, callback) {
+	getImageURLs(docURL, function(err, imgURLs) {
+		if (err) {
+			return callback(err);
+		}
+
+		filterImages(imgURLs, function(err, images) {
+			callback(err, {
+				images: images
+			});
+		});
+	});
+};
 
 // Get content of URL
 function getImageURLs(docURL, callback) {
-	function getAbsURL(imgURL) {
-		return url.resolve(docURL, imgURL);
-	}
+	var opts = {
+		html: docURL,
+		features: {
+			FetchExternalResources: false,
+			ProcessExternalResources: false,
+		}
+	};
 
-	request(docURL, function(err, response, result) {
-		jsdom.env(result, function(err, window) {
-			if (err) {
-				return callback(err);
-			}
+	jsdom.env(opts, function(err, window) {
+		if (err) {
+			return callback(err);
+		}
 
-			var imgNodeList = window.document.getElementsByTagName("img"),
-				imgArray = Array.prototype.slice.call(imgNodeList),
-				srcArray = imgArray.map(getImgSrc),
-				imgURLs = srcArray.map(getAbsURL);
+		var images = getDocumentImages(window.document)
+			.map(function(imageEl) {
+				return imageEl.src;
+			});
 
-			callback(null, imgURLs);
-		});
+		callback(null, images);
 	});
 }
 
-function getImageSize(source, callback) {
-	var readStream = request(source),
-		gmImg = gm(readStream);
-
-	gmImg.size(callback);
+// Get array of image elements in the document
+function getDocumentImages(document) {
+	return toArray(document.getElementsByTagName("img"));
 }
 
+// Convert a DOM NodeList object to a plain JavaScript array
+function toArray(nodeList) {
+	return Array.prototype.slice.call(nodeList);
+}
 
-var MIN_ASPECT = 1 / 3,
-	MAX_ASPECT = 10,
-	MIN_AREA = 100 * 100;
+// Filter array of images to only include valid ones
+function filterImages(images, callback) {
+	var results = [];
 
-function isSizeValid(size) {
+	function checkImage(image, callback) {
+		isValidImage(image, function(err, isValid) {
+			if (isValid) {
+				results.push(image);
+			}
+
+			callback(err);
+		});
+	}
+
+	async.forEach(images, checkImage, function(err) {
+		callback(err, results);
+	});
+}
+
+// Determine if a given image meets criteria
+function isValidImage(image, callback) {
+	getImageSize(image, function(err, size) {
+		if (err) {
+			return callback(err);
+		}
+
+		callback(null, isValidSize(size));
+	});
+}
+
+// Get the dimensions of the image
+function getImageSize(url, callback) {
+	gm(request(url)).size(callback);
+}
+
+// Determine if the give image size meets criteria
+function isValidSize(size) {
+	var MIN_ASPECT = 1 / 3,
+		MAX_ASPECT = 10,
+		MIN_AREA = 100 * 100;
+
 	var aspect = size.height / size.width,
 		area = size.width * size.height;
 
@@ -54,21 +102,3 @@ function isSizeValid(size) {
 		aspect < MAX_ASPECT &&
 		area > MIN_AREA;
 }
-
-function getViableImages(docURL, callback) {
-	getImageURLs(docURL, function(err, imgURLs) {
-		async.filter(imgURLs, function(imgURL, callback) {
-			getImageSize(imgURL, function(err, size) {
-				if (err) {
-					return callback(err);
-				}
-
-				callback(isSizeValid(size));
-			});
-		}, callback);
-	});
-}
-
-getViableImages(URL, function(err, images) {
-	console.log(err, images);
-});
