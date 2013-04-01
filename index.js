@@ -1,51 +1,48 @@
 "use strict";
 
-var request = require("request"),
+var hyperquest = require("hyperquest"),
 	jsdom = require("jsdom"),
 	gm = require("gm"),
-	async = require("async");
+	es = require("event-stream");
 
-// Return images
-module.exports = function(docURL, callback) {
-	getImageURLs(docURL, function(err, imgURLs) {
+var JSDOM_OPTIONS = {
+	features: {
+		FetchExternalResources: false,
+		ProcessExternalResources: false,
+	},
+};
+
+module.exports = function(url, callback) {
+	jsdom.env(url, JSDOM_OPTIONS, function(err, window) {
 		if (err) {
 			return callback(err);
 		}
 
-		filterImages(imgURLs, function(err, images) {
-			callback(err, {
-				images: images
+		getDocumentImages(window.document, function(err, images) {
+			if (err) {
+				return callback(err);
+			}
+
+			callback(null, {
+				images: images.map(getImageSource),
 			});
 		});
 	});
 };
 
-// Get content of URL
-function getImageURLs(docURL, callback) {
-	var opts = {
-		html: docURL,
-		features: {
-			FetchExternalResources: false,
-			ProcessExternalResources: false,
-		}
-	};
+function getDocumentImages(document, callback) {
+	createImageStream(document)
+		.pipe(createImageFilterStream())
+		.pipe(es.writeArray(callback));
+}
 
-	jsdom.env(opts, function(err, window) {
-		if (err) {
-			return callback(err);
-		}
-
-		var images = getDocumentImages(window.document)
-			.map(function(imageEl) {
-				return imageEl.src;
-			});
-
-		callback(null, images);
-	});
+// Get a readable stream emitting document images
+function createImageStream(document) {
+	return es.readArray(getDocumentImageElements(document));
 }
 
 // Get array of image elements in the document
-function getDocumentImages(document) {
+function getDocumentImageElements(document) {
 	return toArray(document.getElementsByTagName("img"));
 }
 
@@ -54,22 +51,20 @@ function toArray(nodeList) {
 	return Array.prototype.slice.call(nodeList);
 }
 
-// Filter array of images to only include valid ones
-function filterImages(images, callback) {
-	var results = [];
-
-	function checkImage(image, callback) {
+// Create a through stream, filtering only images that meet criteria
+function createImageFilterStream() {
+	return es.map(function(image, callback) {
 		isValidImage(image, function(err, isValid) {
-			if (isValid) {
-				results.push(image);
+			if (err) {
+				return callback(err);
 			}
 
-			callback(err);
-		});
-	}
+			if (isValid) {
+				return callback(null, image);
+			}
 
-	async.forEach(images, checkImage, function(err) {
-		callback(err, results);
+			callback();
+		});
 	});
 }
 
@@ -85,8 +80,12 @@ function isValidImage(image, callback) {
 }
 
 // Get the dimensions of the image
-function getImageSize(url, callback) {
-	gm(request(url)).size(callback);
+function getImageSize(image, callback) {
+	gm(hyperquest(getImageSource(image))).size(callback);
+}
+
+function getImageSource(image) {
+	return image.src;
 }
 
 // Determine if the give image size meets criteria
