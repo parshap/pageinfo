@@ -3,7 +3,8 @@
 var hyperquest = require("hyperquest"),
 	jsdom = require("jsdom"),
 	gm = require("gm"),
-	es = require("event-stream");
+	es = require("event-stream"),
+	async = require("async");
 
 var JSDOM_OPTIONS = {
 	features: {
@@ -18,17 +19,22 @@ module.exports = function(url, callback) {
 			return callback(err);
 		}
 
-		getDocumentImages(window.document, function(err, images) {
-			if (err) {
-				return callback(err);
-			}
-
-			callback(null, {
+		async.parallel({
+			"images": function(callback) {
+				getDocumentImages(window.document, callback);
+			},
+		}, function(err, results) {
+			callback(err, {
+				title: getDocumentTitle(window.document),
 				images: images.map(getImageSource),
 			});
 		});
 	});
 };
+
+function getDocumentTitle(document) {
+	return document.querySelector("title").text;
+}
 
 function getDocumentImages(document, callback) {
 	createImageStream(document)
