@@ -12,7 +12,6 @@ test(function(t) {
 		t.ok(info);
 		t.ok(info.images);
 		t.equal(info.title, TITLE);
-		t.ok(info.icon);
 		t.end();
 	});
 });
