@@ -18,5 +18,8 @@
     "jsdom": "~0.5.4",
     "gm": "~1.8.2",
     "async": "~0.2.6"
+  },
+  "devDependencies": {
+    "tape": "~0.3.2"
   }
 }
