@@ -16,6 +16,14 @@ given URI. Currently the following information is available:
 	});
 ```
 
+# Tests
+
+Run tests with npm:
+
+```js
+    npm test
+```
+
 # Authors
 
  * [Parsha Pourkhomami](https://github.com/parshap)
