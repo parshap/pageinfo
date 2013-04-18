@@ -4,6 +4,13 @@ given URI. Currently the following information is available:
  * Title
  * Images (that meet size criteria)
 
+# GraphicsMagick
+
+This module depends on [GraphicsMagick](http://www.graphicsmagick.org/)
+being installed on the system. You can find installation instructions
+[here](http://www.graphicsmagick.org/README.html) or use your favorite
+package manager.
+
 # Usage
 
 ```js
