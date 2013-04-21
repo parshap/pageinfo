@@ -56,10 +56,7 @@ function toArray(array) {
 function createImageFilterStream() {
 	return es.map(function(image, callback) {
 		isValidImage(image, function(err, isValid) {
-			if (err) {
-				return callback(err);
-			}
-
+			// Ignore errors, we will just drop the image
 			if (isValid) {
 				return callback(null, image);
 			}
