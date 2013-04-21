@@ -20,16 +20,12 @@ module.exports = function(url, callback) {
 
 		getDocumentImages(window.document, function(err, images) {
 			callback(err, {
-				title: getDocumentTitle(window.document),
+				title: window.document.title,
 				images: images.map(getImageSource),
 			});
 		});
 	});
 };
-
-function getDocumentTitle(document) {
-	return document.querySelector("title").text;
-}
 
 function getDocumentImages(document, callback) {
 	createImageStream(document)
