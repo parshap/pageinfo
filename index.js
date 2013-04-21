@@ -47,9 +47,9 @@ function getDocumentImageElements(document) {
 	return toArray(document.getElementsByTagName("img"));
 }
 
-// Convert a DOM NodeList object to a plain JavaScript array
-function toArray(nodeList) {
-	return Array.prototype.slice.call(nodeList);
+// Convert an "array-like" object to a plain JavaScript array
+function toArray(array) {
+	return Array.prototype.slice.call(array);
 }
 
 // Create a through stream, filtering only images that meet criteria
