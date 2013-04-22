@@ -80,8 +80,15 @@ function isValidImage(image, callback) {
 }
 
 // Get the dimensions of the image
-function getImageSize(image, callback) {
-	gm(hyperquest(getImageSource(image))).size(callback);
+function getImageSize(url, callback) {
+	createLimitedRequest(url, function(err, request) {
+		if (err) {
+			return callback(err);
+		}
+
+		request.on("error", callback);
+		gm(request).size(callback);
+	});
 }
 
 function getImageSource(image) {
@@ -101,3 +108,30 @@ function isValidSize(size) {
 		aspect < MAX_ASPECT &&
 		area > MIN_AREA;
 }
+
+// Global request queue to limit maximum concurrent connections
+var createLimitedRequest = (function() {
+	module.exports._maxRequests = 10;
+
+	var reqCount = 0,
+		reqQueue = [];
+
+	return function createLimitedRequest(url, callback) {
+		if (reqCount >= module.exports._maxRequests) {
+			reqQueue.push(url);
+			reqQueue.push(callback);
+			return;
+		}
+
+		var request = hyperquest(url);
+		request.on("close", function() {
+			reqCount -= 1;
+			if (reqQueue.length) {
+				createLimitedRequest(reqQueue.shift(), reqQueue.shift());
+			}
+		});
+
+		reqCount += 1;
+		callback(null, request);
+	};
+})();
