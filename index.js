@@ -64,7 +64,13 @@ function createImageFilterStream() {
 
 // Determine if a given image meets criteria
 function isValidImage(image, callback) {
-	getImageSize(image, function(err, size) {
+	var url = getImageSource(image);
+
+	if ( ! url) {
+		return callback(null, false);
+	}
+
+	getImageSize(url, function(err, size) {
 		if (err) {
 			return callback(err);
 		}
