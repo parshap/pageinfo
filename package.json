@@ -3,13 +3,12 @@
   "version": "1.0.0",
   "description": "Return information about given HTML document",
   "main": "index.js",
-  "repository": "",
-  "license": "Public Domain",
-  "readmeFilename": "README.md",
   "repository": {
     "type": "git",
     "url": "http://github.com/parshap/pageinfo.git"
   },
+  "license": "Public Domain",
+  "readmeFilename": "README.md",
   "scripts": {
     "test": "node test.js"
   },
@@ -20,6 +19,8 @@
     "event-stream": "~3.0.13"
   },
   "devDependencies": {
-    "tape": "~0.3.2"
+    "tape": "~0.3.2",
+    "async": "~0.2.7",
+    "measured": "~0.1.3"
   }
 }
